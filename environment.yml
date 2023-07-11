@@ -1,0 +1,4 @@
+name: tf
+channels:
+  - defaults
+prefix: C:\ProgramData\Anaconda3\envs\tf
