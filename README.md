@@ -28,6 +28,7 @@ The results entire workflow can be fully observed in the sudoku_solver_demo.ipyn
 * sudokusolver: A python library containing all the essential functions and classes required for this project.
 * sudoku_solver_models: contain the model used to solve the sudoku
 * digit_classifier_model: contains models used for digit classification
+* images.7z: compressed version of all images used for model training
 
 ## Technology Used
 * Python
