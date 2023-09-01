@@ -1,8 +1,15 @@
-# SUDOKUVISIONSOLVER
+# SUDOKU VISIONS SOLVER
 This repository contains all the essential components for a project that aims to identify and solve unsolved sudoku puzzles from the "BlockBuster Book of Sudoku" using Computer Vision and Deep Learning.
 
+## Original Image
 ![Alt text](readme_images/readme_demo_image_2.JPG "Original Photo")
+
+
+
+
+## Puzzle Solved by CNN
 ![Alt text](readme_images/readme_demo_image_1.JPG "Solved Puzzle")
+
 
 
 ## Project Overview
