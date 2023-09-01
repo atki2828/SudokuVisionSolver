@@ -26,13 +26,12 @@ pip install git+https://github.com/atki2828/VISIONSUDOKUSOLVER/sudokusolve.git
 
 
 # Usage
-'''python
+```python
 from sudokusolver.detectboard.processimage import extract_sudoku_squares , extract_board, create_board_array
 
 unsolved_board_img = extract_board(sample_game)
 display_img(unsolved_board_img, title = 'Extracted Board' , fig_size = (12,10))
-
-'''
+```
 
 # Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change. Please make sure to update tests as appropriate.
