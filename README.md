@@ -1,4 +1,4 @@
-# SUDOKU VISIONS SOLVER
+# SUDOKU VISION SOLVER AI
 This repository contains all the essential components for a project that aims to identify and solve unsolved sudoku puzzles from the "BlockBuster Book of Sudoku" using Computer Vision to identify the Sudoku board and Deep Learning identify the digits and solve the puzzles.
 
 ## Original Image
