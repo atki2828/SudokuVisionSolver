@@ -1,18 +1,22 @@
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
+from collections import OrderedDict
+from dataclasses import dataclass
 
 
 # BOARD_RESIZE_DIM = 2520
 # BOARD_STEPS = np.arange(0,BOARD_RESIZE_DIM, BOARD_RESIZE_DIM/9.0 , dtype = int)
 
 
-def convert_to_gray(img: np.ndarray) -> np.ndarray:
+
+
+def _convert_to_gray(img: np.ndarray) -> np.ndarray:
     """
     Converts an image to grayscale.
 
@@ -28,11 +32,14 @@ def convert_to_gray(img: np.ndarray) -> np.ndarray:
     """
     img = img.copy()
     if len(img.shape) == 3:
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        if img.shape[2] == 3:
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        elif img.shape[2] == 4:
+            img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
     return img
 
 
-def gaussian_blur(img: np.ndarray, kernel_size: tuple = (5, 5)) -> np.ndarray:
+def _gaussian_blur(img: np.ndarray, kernel_size: tuple = (5, 5)) -> np.ndarray:
     """
     Applies Gaussian blur filter to an image
 
@@ -48,7 +55,7 @@ def gaussian_blur(img: np.ndarray, kernel_size: tuple = (5, 5)) -> np.ndarray:
 # # Find the edges in the image using Canny edge detection
 
 
-def canny_edge(img: np.ndarray, thresh_1: int = 50, thresh_2: int = 200) -> np.ndarray:
+def _canny_edge(img: np.ndarray, thresh_1: int = 50, thresh_2: int = 200) -> np.ndarray:
     """
     Applies Canny edge detection to an image
 
@@ -65,7 +72,7 @@ def canny_edge(img: np.ndarray, thresh_1: int = 50, thresh_2: int = 200) -> np.n
 # # Find the contours in the edged image
 
 
-def find_countours(
+def _find_countours(
     img: np.ndarray, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE
 ) -> tuple:
     """
@@ -81,7 +88,7 @@ def find_countours(
     return cv2.findContours(img, mode, method)
 
 
-def get_sorted_contours(
+def _get_sorted_contours(
     contours: List[np.ndarray], n_contours: int
 ) -> List[np.ndarray]:
     """
@@ -98,35 +105,7 @@ def get_sorted_contours(
 
 
 # # Initialize a bounding box for the Sudoku board
-
-
-def find_board(contours: List[np.ndarray], full_img: np.ndarray) -> np.ndarray:
-    """
-    Finds the board in the given contours and returns the board image
-
-    Parameters:
-        contours (List[np.ndarray]): A list of contours
-    Returns:
-        np.ndarray: The board image
-    """
-    board_box = None
-    # Loop over the contours
-    for contour in contours:
-        # Approximate the contour with a polygon
-        polygon = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
-        # Check if the polygon has four sides (a square)
-        if len(polygon) == 4:
-            # Save the bounding box of the square
-            board_box = cv2.boundingRect(polygon)
-            break
-    # Extract the Sudoku board from the image
-    return full_img[
-        board_box[1] : board_box[1] + board_box[3],
-        board_box[0] : board_box[0] + board_box[2],
-    ]
-
-
-def resize_img(img: np.ndarray, board_resize_dim: int = 2520) -> np.ndarray:
+def _resize_img(img: np.ndarray, board_resize_dim: int = 2520) -> np.ndarray:
     """
     Resizes an image to the desired dimensions
 
@@ -140,9 +119,43 @@ def resize_img(img: np.ndarray, board_resize_dim: int = 2520) -> np.ndarray:
     return cv2.resize(img, size)
 
 
+def extract_board(full_board_img: np.ndarray) -> np.ndarray:
+    """
+    Finds the board in the given contours and returns the board image
+
+    Parameters:
+        contours (List[np.ndarray]): A list of contours
+    Returns:
+        np.ndarray: The board image
+    """
+    gray_img = _convert_to_gray(full_board_img)
+    blurred_img = _gaussian_blur(gray_img)
+    edged_img = _canny_edge(blurred_img)
+    contours, _ = _find_countours(edged_img)
+    sorted_contours = _get_sorted_contours(contours=contours, n_contours=10)
+
+    board_box = None
+    # Loop over the contours
+    for contour in sorted_contours:
+        # Approximate the contour with a polygon
+        polygon = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
+        # Check if the polygon has four sides (a square)
+        if len(polygon) == 4:
+            # Save the bounding box of the square
+            board_box = cv2.boundingRect(polygon)
+            break
+    # Extract the Sudoku board from the image
+    return _resize_img(
+        full_board_img[
+            board_box[1] : board_box[1] + board_box[3],
+            board_box[0] : board_box[0] + board_box[2],
+        ]
+    )
+
+
 def extract_sudoku_squares(
     board_image: np.ndarray, board_resize_dim: int
-) -> List[np.ndarray]:
+) -> Dict[Tuple[int, int, int, int], np.ndarray]:
     """
     Extracts individual squares from a Sudoku board image.
 
@@ -151,20 +164,66 @@ def extract_sudoku_squares(
         board_resize_dim: The dimension to resize the board image.
 
     Returns:
-        A list of NumPy arrays, each representing an individual square of the Sudoku board.
-
+        A dictionary where the key is a tuple representing the indices of the subsection
+        and the value is the corresponding image.
     """
 
     square_dim = int(board_resize_dim / 9)
     board_steps = np.arange(0, board_resize_dim, square_dim)
-    im_list = []
+    im_dict = OrderedDict()
 
     for vert_index in range(len(board_steps)):
         for horiz_index in range(len(board_steps)):
+            key = (
+                board_steps[vert_index],
+                board_steps[vert_index] + square_dim,
+                board_steps[horiz_index],
+                board_steps[horiz_index] + square_dim,
+            )
             square_im = board_image[
-                board_steps[vert_index] : board_steps[vert_index] + square_dim,
-                board_steps[horiz_index] : board_steps[horiz_index] + square_dim,
+                key[0] : key[1], key[2] : key[3],
             ]
-            im_list.append(square_im)
+            im_dict[key] = square_im
 
-    return im_list
+    return im_dict
+
+
+def _process_digit_img(img: np.ndarray) -> tf.Tensor:
+    """
+    Processes the image to match the size and format of the images used during training.
+
+    Parameters:
+    - img (np.ndarray): The image to be processed.
+
+    Returns:
+    - tf.Tensor: The processed image as a tensor.
+    """
+    tensor_img = tf.keras.preprocessing.image.img_to_array(img)
+    tensor_img = tf.image.resize(tensor_img, (32, 32))
+
+    if len(tensor_img.shape) == 2:
+        tensor_img = tf.expand_dims(
+            tensor_img, axis=-1
+        )
+        tensor_img = tf.image.grayscale_to_rgb(tensor_img)
+
+    tensor_img = tf.expand_dims(tensor_img, axis=0)
+    tensor_img = tensor_img / 255.0
+    return tensor_img
+
+
+def _classify_digit(img, model):
+    predictions = model.predict(img, verbose=0)
+    return np.argmax(predictions)
+
+
+def _create_predictions(img, model):
+    processed_img = _process_digit_img(img)
+    return _classify_digit(processed_img, model)
+
+
+def create_board_array(square_list, classifier_model):
+    board_list = [_create_predictions(img, classifier_model) for img in square_list]
+    board_array = np.reshape(board_list, (9, 9))
+    return board_array
+
