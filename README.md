@@ -29,6 +29,7 @@ The results entire workflow can be fully observed in the sudoku_solver_demo.ipyn
 * sudoku_solver_models: contain the model used to solve the sudoku
 * digit_classifier_model: contains models used for digit classification
 * images.7z: compressed version of all images used for model training
+* sudoku_puzzles: contains million puzzles CNN was trained to solve
 
 ## Technology Used
 * Python
