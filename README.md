@@ -52,6 +52,7 @@ Beyond the technical goals, this project served as a significant learning experi
 
 
 ## References
+
 [Towards Data Science Article: A detailed explanation of solving Sudoku using CNN.](https://towardsdatascience.com/solving-sudoku-with-convolution-neural-network-keras-655ba4be3b11)
 
-[Kaggle Notebook: The source of the model architecture used in this project.] (https://www.kaggle.com/code/lyly123/solve-sudoku-with-cnn-acc-97)
+[Kaggle Notebook: The source of the model architecture used in this project.](https://www.kaggle.com/code/lyly123/solve-sudoku-with-cnn-acc-97)
